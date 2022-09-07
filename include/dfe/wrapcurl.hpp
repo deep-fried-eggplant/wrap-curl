@@ -90,7 +90,6 @@ namespace dfe{
         enum class HttpVersion  : Long;
 
         private:
-        CURL* _curl;
         std::unordered_map<detail::WrapCurlOptionBool  ,Bool  > _optionBoolList  ;
         std::unordered_map<detail::WrapCurlOptionLong  ,Long  > _optionLongList  ;
         std::unordered_map<detail::WrapCurlOptionString,String> _optionStringList;
