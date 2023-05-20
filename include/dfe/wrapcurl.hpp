@@ -241,7 +241,7 @@ namespace dfe{
         static size_t readCallback  (char* ptr,size_t size,size_t nmemb,void* istream);
         static void setWriteData (CURL* curl,String* body  );
         static void setHeaderData(CURL* curl,String* header);
-        static void setReadData  (CURL* curl,std::istream& is);
+        static void setReadData  (CURL* curl,Istream* istream);
 
         public:
     
@@ -396,13 +396,11 @@ namespace dfe{
         curl=curl_easy_init();
         
         if(curl != nullptr){
-            // for(auto item : header){
-            //     curlHeader=curl_slist_append(curlHeader,std::string(item.first+":"+item.second).c_str());
-            // }
-            applyHeader(curlHeader,header);
-
+            
             setHeaderData(curl,&(response.header));
             setWriteData(curl,&(response.body));
+
+            applyHeader(curlHeader,header);
 
             curl_easy_setopt(curl,CURLOPT_URL,url.c_str());
             curl_easy_setopt(curl,CURLOPT_HTTPHEADER,curlHeader);
@@ -440,12 +438,11 @@ namespace dfe{
         curl=curl_easy_init();
         
         if(curl != nullptr){
-            for(auto item : header){
-                curlHeader=curl_slist_append(curlHeader,std::string(item.first+":"+item.second).c_str());
-            }
-
+            
             setHeaderData(curl,&(response.header));
             setWriteData(curl,&(response.body));
+
+            applyHeader(curlHeader,header);
 
             curl_easy_setopt(curl, CURLOPT_URL,url.c_str());
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER,curlHeader);
@@ -484,19 +481,16 @@ namespace dfe{
         curl=curl_easy_init();
         
         if(curl != nullptr){
-            
-            for(auto item : header){
-                curlHeader=curl_slist_append(curlHeader,std::string(item.first+":"+item.second).c_str());
-            }
 
             setHeaderData(curl,&(response.header));
             setWriteData(curl,&(response.body));
-            setReadData(curl,istream);
+            setReadData(curl,&istream);
+
+            applyHeader(curlHeader,header);
 
             curl_easy_setopt(curl,CURLOPT_URL,url.c_str());
             curl_easy_setopt(curl,CURLOPT_HTTPHEADER,curlHeader);
             curl_easy_setopt(curl,CURLOPT_POST,1);
-
             applyOption(curl);
 
             curlCode = curl_easy_perform(curl);
@@ -528,14 +522,14 @@ namespace dfe{
         curl=curl_easy_init();
         
         if(curl != nullptr){
-            for(auto item : header){
-                curlHeader=curl_slist_append(curlHeader,std::string(item.first+":"+item.second).c_str());
-            }
+
             mime=curl_mime_init(curl);
             formData.apply(mime);
 
             setHeaderData(curl,&(response.header));
             setWriteData(curl,&(response.body));
+
+            applyHeader(curlHeader,header);
 
             curl_easy_setopt(curl,CURLOPT_URL,url.c_str());
             curl_easy_setopt(curl,CURLOPT_HTTPHEADER,curlHeader);
@@ -619,9 +613,9 @@ namespace dfe{
         curl_easy_setopt(curl,CURLOPT_HEADERFUNCTION,headerCallback);
         curl_easy_setopt(curl,CURLOPT_HEADERDATA,(void*)header);
     }
-    NOINLINE void WrapCurl::setReadData(CURL* curl,Istream& istream){
+    NOINLINE void WrapCurl::setReadData(CURL* curl,Istream* istream){
         curl_easy_setopt(curl,CURLOPT_READFUNCTION,readCallback);
-        curl_easy_setopt(curl,CURLOPT_READDATA,(void*)&istream);
+        curl_easy_setopt(curl,CURLOPT_READDATA,(void*)istream);
     }
     NOINLINE size_t WrapCurl::writeCallback(char* ptr,size_t size,size_t nmemb,void* body){
         std::string* p=static_cast<std::string*>(body);
