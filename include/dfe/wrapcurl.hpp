@@ -13,6 +13,14 @@
 #include<type_traits>
 #include<memory>
 
+#ifdef __GNUC__
+#define INLINE inline __attribute__((always_inline))
+#define NOINLINE inline __attribute((noinline))
+#else
+#define INLINE inline
+#define NOINLINE inline
+#endif
+
 /**
 *  @namespace dfe
 *  @brief deep-fried-eggplant.com
@@ -43,20 +51,19 @@ namespace dfe{
 namespace std{
     template<>
     struct hash<dfe::detail::WrapCurlOptionBool>{
-        size_t operator()(dfe::detail::WrapCurlOptionBool x) const noexcept{
+        INLINE size_t operator()(dfe::detail::WrapCurlOptionBool x) const noexcept{
             return static_cast<std::underlying_type<dfe::detail::WrapCurlOptionBool>::type>(x);
         }
     };
     template<>
     struct hash<dfe::detail::WrapCurlOptionLong>{
-        size_t operator()(dfe::detail::WrapCurlOptionLong x) const noexcept{
+        INLINE size_t operator()(dfe::detail::WrapCurlOptionLong x) const noexcept{
             return static_cast<std::underlying_type<dfe::detail::WrapCurlOptionLong>::type>(x);
         }
     };
     template<>
     struct hash<dfe::detail::WrapCurlOptionString>{
-        size_t operator()(dfe::detail::WrapCurlOptionString x) const noexcept{
-            
+        INLINE size_t operator()(dfe::detail::WrapCurlOptionString x) const noexcept{
             return static_cast<std::underlying_type<dfe::detail::WrapCurlOptionString>::type>(x);
         }
     };
@@ -227,7 +234,7 @@ namespace dfe{
 
         private:
         void applyOption(CURL* curl);
-        void applyHeader(curl_slist* slist,const Header& header);
+        void applyHeader(curl_slist*& slist,const Header& header);
 
         static size_t writeCallback (char* ptr,size_t size,size_t nmemb,void* body   );
         static size_t headerCallback(char* ptr,size_t size,size_t nmemb,void* header );
@@ -373,13 +380,13 @@ namespace dfe{
     };
 
 
-    WrapCurl::WrapCurl():_optionBoolList({}),_optionLongList({}),_optionStringList({}){}
-    WrapCurl::~WrapCurl(){}
+    INLINE WrapCurl::WrapCurl():_optionBoolList({}),_optionLongList({}),_optionStringList({}){}
+    INLINE WrapCurl::~WrapCurl(){}
 
-    WrapCurl::Response WrapCurl::get(const String& url){
+    NOINLINE WrapCurl::Response WrapCurl::get(const String& url){
         return get(url,{});
     }
-    WrapCurl::Response WrapCurl::get(const String& url, const Header& header){
+    NOINLINE WrapCurl::Response WrapCurl::get(const String& url, const Header& header){
         CURL* curl;
         CURLcode curlCode;
         curl_slist* curlHeader=nullptr;
@@ -389,9 +396,10 @@ namespace dfe{
         curl=curl_easy_init();
         
         if(curl != nullptr){
-            for(auto item : header){
-                curlHeader=curl_slist_append(curlHeader,std::string(item.first+":"+item.second).c_str());
-            }
+            // for(auto item : header){
+            //     curlHeader=curl_slist_append(curlHeader,std::string(item.first+":"+item.second).c_str());
+            // }
+            applyHeader(curlHeader,header);
 
             setHeaderData(curl,&(response.header));
             setWriteData(curl,&(response.body));
@@ -419,10 +427,10 @@ namespace dfe{
         return response;
     }
 
-    WrapCurl::Response WrapCurl::post(const String& url,const String& postData){
+    NOINLINE WrapCurl::Response WrapCurl::post(const String& url,const String& postData){
         return post(url,postData,{});
     }
-    WrapCurl::Response WrapCurl::post(const String& url,const String& postData,const Header& header){
+    NOINLINE WrapCurl::Response WrapCurl::post(const String& url,const String& postData,const Header& header){
         CURL* curl;
         CURLcode curlCode;
         curl_slist* curlHeader=NULL;
@@ -463,10 +471,10 @@ namespace dfe{
         }
         return response;
     }
-    WrapCurl::Response WrapCurl::post(const String& url,Istream& istream){
+    NOINLINE WrapCurl::Response WrapCurl::post(const String& url,Istream& istream){
         return post(url,istream,{});
     }
-    WrapCurl::Response WrapCurl::post(const String& url,Istream& istream,const Header& header){
+    NOINLINE WrapCurl::Response WrapCurl::post(const String& url,Istream& istream,const Header& header){
         CURL* curl;
         CURLcode curlCode;
         curl_slist* curlHeader=nullptr;
@@ -476,6 +484,7 @@ namespace dfe{
         curl=curl_easy_init();
         
         if(curl != nullptr){
+            
             for(auto item : header){
                 curlHeader=curl_slist_append(curlHeader,std::string(item.first+":"+item.second).c_str());
             }
@@ -505,10 +514,10 @@ namespace dfe{
         }
         return response;
     }
-    WrapCurl::Response WrapCurl::post(const String& url,const FormData& formData){
+    NOINLINE WrapCurl::Response WrapCurl::post(const String& url,const FormData& formData){
         return post(url,formData,{});
     }
-    WrapCurl::Response WrapCurl::post(const String& url,const FormData& formData,const Header& header){
+    NOINLINE WrapCurl::Response WrapCurl::post(const String& url,const FormData& formData,const Header& header){
         CURL* curl;
         CURLcode curlCode;
         curl_slist* curlHeader=nullptr;
@@ -552,14 +561,14 @@ namespace dfe{
     }
     
 
-    void WrapCurl::setOption(const detail::WrapCurlOptionBool option,const Bool value){
+    INLINE void WrapCurl::setOption(const detail::WrapCurlOptionBool option,const Bool value){
         _optionBoolList[option]=value;
     }
-    void WrapCurl::setOption(const detail::WrapCurlOptionLong option,const Long value){
+    INLINE void WrapCurl::setOption(const detail::WrapCurlOptionLong option,const Long value){
         _optionLongList[option]=value;
     }
     template<typename NumberT>
-    void WrapCurl::setOption(const detail::WrapCurlOptionLong option,const NumberT value){
+    INLINE void WrapCurl::setOption(const detail::WrapCurlOptionLong option,const NumberT value){
         static_assert(
             std::is_enum<NumberT>::value
                 || std::is_integral<NumberT>::value
@@ -568,25 +577,25 @@ namespace dfe{
         );
         this->setOption(option,static_cast<Long>(value));
     }
-    void WrapCurl::setOption(const detail::WrapCurlOptionString option,const String value){
+    INLINE void WrapCurl::setOption(const detail::WrapCurlOptionString option,const String value){
         _optionStringList[option]=value;
     }
-    void WrapCurl::eraseOption(const detail::WrapCurlOptionBool option){
+    INLINE void WrapCurl::eraseOption(const detail::WrapCurlOptionBool option){
         _optionBoolList.erase(option);
     }
-    void WrapCurl::eraseOption(const detail::WrapCurlOptionLong option){
+    INLINE void WrapCurl::eraseOption(const detail::WrapCurlOptionLong option){
         _optionLongList.erase(option);
     }
-    void WrapCurl::eraseOption(const detail::WrapCurlOptionString option){
+    INLINE void WrapCurl::eraseOption(const detail::WrapCurlOptionString option){
         _optionStringList.erase(option);
     }
-    void WrapCurl::clearOptions(){
+    INLINE void WrapCurl::clearOptions(){
         _optionBoolList.clear();
         _optionLongList.clear();
         _optionStringList.clear();
     }
 
-    void WrapCurl::applyOption(CURL* curl){
+    NOINLINE void WrapCurl::applyOption(CURL* curl){
         for(auto item : _optionBoolList){
             curl_easy_setopt(curl,(CURLoption)(long)item.first,item.second);
         }
@@ -597,38 +606,43 @@ namespace dfe{
             curl_easy_setopt(curl,(CURLoption)(long)item.first,item.second.c_str());
         }
     }
-    void WrapCurl::setWriteData(CURL* curl,std::string* body){
+    NOINLINE void WrapCurl::applyHeader(curl_slist*& list,const Header& header){
+        for(auto& item : header){
+            list=curl_slist_append(list,(item.first+':'+item.second).c_str());
+        }
+    }
+    NOINLINE void WrapCurl::setWriteData(CURL* curl,std::string* body){
         curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,writeCallback);
         curl_easy_setopt(curl,CURLOPT_WRITEDATA,(void*)body);
     }
-    void WrapCurl::setHeaderData(CURL* curl,std::string* header){
+    NOINLINE void WrapCurl::setHeaderData(CURL* curl,std::string* header){
         curl_easy_setopt(curl,CURLOPT_HEADERFUNCTION,headerCallback);
         curl_easy_setopt(curl,CURLOPT_HEADERDATA,(void*)header);
     }
-    void WrapCurl::setReadData(CURL* curl,Istream& istream){
+    NOINLINE void WrapCurl::setReadData(CURL* curl,Istream& istream){
         curl_easy_setopt(curl,CURLOPT_READFUNCTION,readCallback);
         curl_easy_setopt(curl,CURLOPT_READDATA,(void*)&istream);
     }
-    size_t WrapCurl::writeCallback(char* ptr,size_t size,size_t nmemb,void* body){
+    NOINLINE size_t WrapCurl::writeCallback(char* ptr,size_t size,size_t nmemb,void* body){
         std::string* p=static_cast<std::string*>(body);
         size_t s=size*nmemb;
         p->append(ptr,s);
         return s;
     }
-    size_t WrapCurl::headerCallback(char* ptr,size_t size,size_t nmemb,void* header){
+    NOINLINE size_t WrapCurl::headerCallback(char* ptr,size_t size,size_t nmemb,void* header){
         std::string* p=static_cast<std::string*>(header);
         size_t s=size*nmemb;
         p->append(ptr,s);
         return s;
     }
-    size_t WrapCurl::readCallback(char* ptr,size_t size,size_t nmemb,void* istream){
+    NOINLINE size_t WrapCurl::readCallback(char* ptr,size_t size,size_t nmemb,void* istream){
         Istream* p=static_cast<Istream*>(istream);
         size_t s=size*nmemb;
         p->read(ptr,s);
         return p->gcount();
     }
 
-    std::string WrapCurl::urlEncode(const std::string& str){
+    NOINLINE std::string WrapCurl::urlEncode(const std::string& str){
         std::ostringstream oss;
         for(char ch : str){
             if(
@@ -647,7 +661,7 @@ namespace dfe{
         }
         return oss.str();
     }
-    std::string WrapCurl::urlEncode(const Params& data){
+    NOINLINE std::string WrapCurl::urlEncode(const Params& data){
         std::ostringstream oss;
         for(auto it=data.begin(); it!=data.end(); it++){
             auto item=*it;
@@ -661,45 +675,46 @@ namespace dfe{
         return oss.str();
     }
 
-    WrapCurl::FormData::Data::Data()
+    INLINE WrapCurl::FormData::Data::Data()
     :   name(nullptr),isFilePath(false),data(nullptr),
         dataSize(0),fileName(nullptr),header(nullptr)
     {}
-    WrapCurl::FormData::Data::Data::~Data(){
-        delete data;
-        delete fileName;
+    INLINE WrapCurl::FormData::Data::Data::~Data(){
+        delete[] name;
+        delete[] data;
+        delete[] fileName;
         curl_slist_free_all(header);
     }
-    void WrapCurl::FormData::DataNode::clear(){
+    INLINE void WrapCurl::FormData::DataNode::clear(){
         if(next){
             next->clear();
             delete next;
         }
     }
 
-    WrapCurl::FormData::FormData()
+    INLINE WrapCurl::FormData::FormData()
     :   _node(nullptr)
     {}
-    WrapCurl::FormData::~FormData(){
+    INLINE WrapCurl::FormData::~FormData(){
         if(_node){
             _node->clear();
             delete _node;
         }
     }
 
-    WrapCurl::FormData::Data& WrapCurl::FormData::makeNewNode(){
+    NOINLINE WrapCurl::FormData::Data& WrapCurl::FormData::makeNewNode(){
         DataNode* node=new DataNode();
         node->next=this->_node;
         this->_node=node;
         return _node->data;
     }
-    void WrapCurl::FormData::addData(const String& name,const String& data){
+    NOINLINE void WrapCurl::FormData::addData(const String& name,const String& data){
         Data& d=makeNewNode();
         d.name=copyString(name);
         d.data=copyData(data,d.dataSize);
         d.isFilePath=false;
     }
-    void WrapCurl::FormData::addData(const String& name,const String& data,const Header& header){
+    NOINLINE void WrapCurl::FormData::addData(const String& name,const String& data,const Header& header){
         Data& d=makeNewNode();
         d.name=copyString(name);
         d.data=copyData(data,d.dataSize);
@@ -708,14 +723,14 @@ namespace dfe{
             d.header=curl_slist_append(d.header,(it->first+':'+it->second).c_str());
         }
     }
-    void WrapCurl::FormData::addData(const String& name,const String& data,const String& fileName){
+    NOINLINE void WrapCurl::FormData::addData(const String& name,const String& data,const String& fileName){
         Data& d=makeNewNode();
         d.name=copyString(name);
         d.data=copyData(data,d.dataSize);
         d.fileName=copyString(fileName);
         d.isFilePath=false;
     }
-    void WrapCurl::FormData::addData(const String& name,const String& data,const String& fileName,const Header& header){
+    NOINLINE void WrapCurl::FormData::addData(const String& name,const String& data,const String& fileName,const Header& header){
         Data& d=makeNewNode();
         d.name=copyString(name);
         d.data=copyData(data,d.dataSize);
@@ -725,13 +740,13 @@ namespace dfe{
             d.header=curl_slist_append(d.header,(it->first+':'+it->second).c_str());
         }
     }
-    void WrapCurl::FormData::addFile(const String& name,const String& filePath){
+    NOINLINE void WrapCurl::FormData::addFile(const String& name,const String& filePath){
         Data& d=makeNewNode();
         d.name=copyString(name);
         d.data=copyString(filePath);
         d.isFilePath=true;
     }
-    void WrapCurl::FormData::addFile(const String& name,const String& filePath,const Header& header){
+    NOINLINE void WrapCurl::FormData::addFile(const String& name,const String& filePath,const Header& header){
         Data& d=makeNewNode();
         d.name=copyString(name);
         d.data=copyString(filePath);
@@ -740,14 +755,14 @@ namespace dfe{
             d.header=curl_slist_append(d.header,(it->first+':'+it->second).c_str());
         }
     }
-    void WrapCurl::FormData::addFile(const String& name,const String& filePath,const String& fileName){
+    NOINLINE void WrapCurl::FormData::addFile(const String& name,const String& filePath,const String& fileName){
         Data& d=makeNewNode();
         d.name=copyString(name);
         d.data=copyString(filePath);
         d.fileName=copyString(fileName);
         d.isFilePath=true;
     }
-    void WrapCurl::FormData::addFile(const String& name,const String& filePath,const String& fileName,const Header& header){
+    NOINLINE void WrapCurl::FormData::addFile(const String& name,const String& filePath,const String& fileName,const Header& header){
         Data& d=makeNewNode();
         d.name=copyString(name);
         d.data=copyString(filePath);
@@ -758,7 +773,7 @@ namespace dfe{
         }
     }
 
-    void WrapCurl::FormData::apply(curl_mime* mime) const{
+    NOINLINE void WrapCurl::FormData::apply(curl_mime* mime) const{
         curl_mimepart* part;
         for(DataNode* node=_node; bool(node); node=node->next){
             Data& item=node->data;
@@ -780,7 +795,7 @@ namespace dfe{
         }
     }
 
-    char* WrapCurl::FormData::copyString(const String& str){
+    NOINLINE char* WrapCurl::FormData::copyString(const String& str){
         std::size_t size=str.size();
         char* ptr=new char[size+1];
         mempcpy(ptr,str.c_str(),size);
@@ -788,7 +803,7 @@ namespace dfe{
         return ptr;
     }
 
-    char* WrapCurl::FormData::copyData(const String& str,size_t& size){
+    NOINLINE char* WrapCurl::FormData::copyData(const String& str,size_t& size){
         size=str.size();
         char* ptr=new char[size+1];
         memcpy(ptr,str.c_str(),size);
